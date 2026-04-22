@@ -1,5 +1,6 @@
 import { ShoppingCart, Shield, Lock } from "lucide-react";
 import heroImage from "@/assets/hero.png";
+import steakImage from "@/assets/steak.jpg";
 
 function Logo() {
   return (
@@ -286,11 +287,44 @@ function BigSpoonIcon() {
   );
 }
 
+function FlavorSection() {
+  return (
+    <section className="bg-white">
+      <div className="mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-2 items-stretch">
+        <div className="aspect-[4/3] md:aspect-auto md:min-h-[420px] overflow-hidden">
+          <img
+            src={steakImage}
+            alt="Prato com carne suculenta e batatas temperadas"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="flex flex-col justify-center px-8 sm:px-12 py-12 md:py-16">
+          <h2 className="text-[#1a1a1a] text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
+            Menos tempo
+            <br />
+            na cozinha.
+          </h2>
+          <h3 className="mt-3 text-[hsl(var(--primary))] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+            Mais sabor
+            <br />
+            no prato.
+          </h3>
+          <p className="mt-6 text-[#5a5a5a] text-base sm:text-lg leading-relaxed max-w-md">
+            Ideal para quem busca praticidade sem abrir mão do sabor caseiro
+            em todas as receitas.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function App() {
   return (
     <>
       <Hero />
       <BenefitsRow />
+      <FlavorSection />
     </>
   );
 }
