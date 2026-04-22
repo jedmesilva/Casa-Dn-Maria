@@ -17,7 +17,7 @@ import dishArroz from "@/assets/arroz.png";
 import dishMolhos from "@/assets/molhos.png";
 import dishRefogados from "@/assets/refogados.png";
 import logoImage from "@/assets/logo.png";
-import productImage from "@/assets/product.png";
+import productImage from "@/assets/product-nobg.png";
 
 function Logo({ className = "h-24 w-auto" }: { className?: string }) {
   return (
@@ -443,7 +443,15 @@ function ProductInfoRow({
 function ProductInfoSection() {
   return (
     <section className="bg-white py-16 sm:py-24">
-      <div className="mx-auto max-w-3xl px-6 sm:px-10">
+      <div className="mx-auto max-w-6xl px-6 sm:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+        <div className="flex justify-center">
+          <img
+            src={productImage}
+            alt="Pote DN. Maria Alho Triturado com Sal"
+            className="w-full max-w-[360px] h-auto object-contain drop-shadow-[0_25px_40px_rgba(0,0,0,0.22)]"
+          />
+        </div>
+
         <div>
           <h2 className="text-[#1a1a1a] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
             Informações do produto
@@ -494,6 +502,13 @@ function FooterCTA() {
           backgroundPosition: "right center",
         }}
       />
+      <div className="absolute inset-y-0 right-0 hidden md:flex items-center pr-8 z-[1]">
+        <img
+          src={productImage}
+          alt=""
+          className="h-[85%] w-auto object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
+        />
+      </div>
       <div
         className="absolute inset-0"
         style={{
