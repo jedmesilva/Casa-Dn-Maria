@@ -1,4 +1,15 @@
-import { ShoppingCart, Shield, Lock, Heart, ShieldCheck, Leaf, CheckCircle2 } from "lucide-react";
+import {
+  ShoppingCart,
+  Shield,
+  Lock,
+  Heart,
+  ShieldCheck,
+  Leaf,
+  CheckCircle2,
+  Refrigerator,
+  Calendar,
+  Weight,
+} from "lucide-react";
 import heroImage from "@/assets/hero.png";
 import steakImage from "@/assets/steak.jpg";
 import dishCarnes from "@/assets/carnes.png";
@@ -416,6 +427,103 @@ function WhySection() {
   );
 }
 
+function GarlicSmallIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M12 3 C9 6 7 9 7 14 C7 19 9 21 12 21 C15 21 17 19 17 14 C17 9 15 6 12 3 Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <path d="M12 3 L12 1.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M12 8 L12 21" stroke="currentColor" strokeWidth="1.2" opacity="0.55" />
+      <path d="M9.5 14 C9.5 17 10.5 19.5 12 21" stroke="currentColor" strokeWidth="1.2" opacity="0.55" />
+      <path d="M14.5 14 C14.5 17 13.5 19.5 12 21" stroke="currentColor" strokeWidth="1.2" opacity="0.55" />
+    </svg>
+  );
+}
+
+function ProductInfoRow({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-4 py-4 border-b border-[#2a1d12]/10 last:border-b-0">
+      <div className="shrink-0 w-11 h-11 rounded-md bg-[#fbf7f0] flex items-center justify-center text-[#b8902f]">
+        {icon}
+      </div>
+      <div className="flex-1 pt-0.5">
+        <p className="text-[#1a1a1a] font-bold text-base sm:text-lg">{title}</p>
+        <p className="mt-1 text-[#5a5a5a] text-sm sm:text-base leading-relaxed">
+          {children}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ProductInfoSection() {
+  return (
+    <section className="bg-white py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-6 sm:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+        <div className="flex justify-center">
+          <div
+            className="w-full max-w-[360px] aspect-square rounded-2xl bg-[#f5efe4] flex items-center justify-center overflow-hidden"
+          >
+            <img
+              src={heroImage}
+              alt="Pote DN. Maria Alho Triturado com Sal"
+              className="w-full h-full object-cover scale-[2.2] -translate-x-[8%] translate-y-[5%]"
+            />
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-[#1a1a1a] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+            Informações do produto
+          </h2>
+          <div className="mt-5 h-1 w-16 rounded-full bg-[#d4af5a]" />
+
+          <div className="mt-8 rounded-xl border border-[#2a1d12]/10 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-5 sm:px-6">
+            <ProductInfoRow
+              icon={<GarlicSmallIcon className="w-6 h-6" />}
+              title="Ingredientes:"
+            >
+              Alho, sal e estabilizante (INS 330).
+            </ProductInfoRow>
+            <ProductInfoRow
+              icon={<Refrigerator className="w-6 h-6" strokeWidth={1.7} />}
+              title="Armazenamento:"
+            >
+              Manter em local seco e fresco.
+              <br />
+              Após aberto, manter refrigerado.
+            </ProductInfoRow>
+            <ProductInfoRow
+              icon={<Calendar className="w-6 h-6" strokeWidth={1.7} />}
+              title="Validade:"
+            >
+              6 meses a partir da data de fabricação.
+            </ProductInfoRow>
+            <ProductInfoRow
+              icon={<Weight className="w-6 h-6" strokeWidth={1.7} />}
+              title="Peso líquido:"
+            >
+              1 kg
+            </ProductInfoRow>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function App() {
   return (
     <>
@@ -424,6 +532,7 @@ function App() {
       <FlavorSection />
       <DishesSection />
       <WhySection />
+      <ProductInfoSection />
     </>
   );
 }
