@@ -16,44 +16,16 @@ import dishCarnes from "@/assets/carnes.png";
 import dishArroz from "@/assets/arroz.png";
 import dishMolhos from "@/assets/molhos.png";
 import dishRefogados from "@/assets/refogados.png";
+import logoImage from "@/assets/logo.png";
+import productImage from "@/assets/product.png";
 
-function Logo() {
+function Logo({ className = "h-24 w-auto" }: { className?: string }) {
   return (
-    <div className="flex flex-col items-center text-[hsl(var(--accent))]">
-      <svg
-        width="58"
-        height="64"
-        viewBox="0 0 58 64"
-        fill="none"
-        className="drop-shadow-[0_0_12px_rgba(212,175,90,0.25)]"
-      >
-        <path
-          d="M4 60 L4 22 C4 10 14 2 29 2 C44 2 54 10 54 22 L54 60"
-          stroke="currentColor"
-          strokeWidth="2"
-          fill="none"
-        />
-        <path
-          d="M29 14 c-3 0 -5 2 -5 5 c0 3 5 7 5 7 c0 0 5 -4 5 -7 c0 -3 -2 -5 -5 -5 z"
-          fill="currentColor"
-        />
-        <text
-          x="29"
-          y="48"
-          textAnchor="middle"
-          fontFamily="serif"
-          fontSize="14"
-          fontWeight="600"
-          fill="currentColor"
-          letterSpacing="1"
-        >
-          DN
-        </text>
-      </svg>
-      <div className="mt-2 font-serif italic tracking-[0.3em] text-sm">
-        DN. MARIA
-      </div>
-    </div>
+    <img
+      src={logoImage}
+      alt="DN. Maria"
+      className={`${className} drop-shadow-[0_0_18px_rgba(212,175,90,0.25)]`}
+    />
   );
 }
 
@@ -146,20 +118,31 @@ function GarlicBulbIcon() {
 function Hero() {
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-[hsl(var(--background))]">
-      {/* Background image — positioned to the right so only product/garlic show */}
+      {/* Background scene */}
       <div
-        className="absolute inset-0 bg-no-repeat hidden md:block"
+        className="absolute inset-0 bg-no-repeat opacity-60 hidden md:block"
         style={{
           backgroundImage: `url(${heroImage})`,
           backgroundSize: "auto 110%",
           backgroundPosition: "right center",
         }}
       />
-      {/* Mobile fallback — show full image cropped */}
-      <div
-        className="absolute inset-0 bg-cover bg-center md:hidden opacity-30"
-        style={{ backgroundImage: `url(${heroImage})` }}
-      />
+      {/* Product photo overlay (right side) */}
+      <div className="absolute inset-y-0 right-0 hidden md:flex items-center pr-6 lg:pr-12 z-[1]">
+        <img
+          src={productImage}
+          alt="Pote DN. Maria Alho Triturado com Sal"
+          className="h-[78%] w-auto object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
+        />
+      </div>
+      {/* Mobile product */}
+      <div className="absolute inset-x-0 bottom-0 md:hidden flex justify-center pointer-events-none opacity-90">
+        <img
+          src={productImage}
+          alt=""
+          className="h-[42vh] w-auto object-contain"
+        />
+      </div>
       {/* Dark gradient overlay — fully cover left half to hide original text */}
       <div
         className="absolute inset-0"
@@ -473,13 +456,11 @@ function ProductInfoSection() {
     <section className="bg-white py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-6 sm:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
         <div className="flex justify-center">
-          <div
-            className="w-full max-w-[360px] aspect-square rounded-2xl bg-[#f5efe4] flex items-center justify-center overflow-hidden"
-          >
+          <div className="w-full max-w-[360px] aspect-square rounded-2xl bg-gradient-to-br from-[#f5efe4] to-[#ece2cf] flex items-center justify-center p-6">
             <img
-              src={heroImage}
+              src={productImage}
               alt="Pote DN. Maria Alho Triturado com Sal"
-              className="w-full h-full object-cover scale-[2.2] -translate-x-[8%] translate-y-[5%]"
+              className="w-full h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.18)]"
             />
           </div>
         </div>
@@ -526,14 +507,21 @@ function ProductInfoSection() {
 
 function FooterCTA() {
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-hidden bg-[hsl(18_22%_8%)]">
       <div
-        className="absolute inset-0 bg-no-repeat bg-cover"
+        className="absolute inset-0 bg-no-repeat bg-cover opacity-50"
         style={{
           backgroundImage: `url(${heroImage})`,
           backgroundPosition: "right center",
         }}
       />
+      <div className="absolute inset-y-0 right-0 hidden md:flex items-center pr-8 z-[1]">
+        <img
+          src={productImage}
+          alt=""
+          className="h-[85%] w-auto object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
+        />
+      </div>
       <div
         className="absolute inset-0"
         style={{
@@ -580,11 +568,7 @@ function Footer() {
   return (
     <footer className="bg-[#0f0a06] text-white/70 py-10 border-t border-white/10">
       <div className="mx-auto max-w-6xl px-6 sm:px-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
-        <div className="flex items-center gap-3 text-[hsl(var(--accent))]">
-          <span className="font-serif italic tracking-[0.3em] text-base">
-            DN. MARIA
-          </span>
-        </div>
+        <img src={logoImage} alt="DN. Maria" className="h-14 w-auto" />
         <p className="text-white/50">
           © {new Date().getFullYear()} DN. Maria — Todos os direitos reservados.
         </p>
