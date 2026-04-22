@@ -24,6 +24,7 @@ import dishMolhos from "@/assets/molhos.png";
 import dishRefogados from "@/assets/refogados.png";
 import logoImage from "@/assets/logo.png";
 import productImage from "@/assets/product-nobg.png";
+import productSemSalImage from "@/assets/product-semsal-nobg.png";
 
 function Logo({ className = "h-24 w-auto" }: { className?: string }) {
   return (
@@ -484,15 +485,11 @@ function ProductConfigurator() {
             <div className="relative">
               <div className="absolute inset-0 -m-8 rounded-full bg-gradient-to-br from-[#fbf3df] to-[#f3e6c4] blur-2xl opacity-70" />
               <img
-                src={productImage}
+                key={version}
+                src={version === "com-sal" ? productImage : productSemSalImage}
                 alt={`Pote DN. Maria Alho Triturado ${version === "com-sal" ? "com Sal" : "sem Sal"}`}
-                className="relative w-full max-w-[380px] h-auto object-contain drop-shadow-[0_25px_40px_rgba(0,0,0,0.22)]"
+                className="relative w-full max-w-[380px] h-auto object-contain drop-shadow-[0_25px_40px_rgba(0,0,0,0.22)] animate-in fade-in duration-300"
               />
-              {version === "sem-sal" && (
-                <span className="absolute top-4 right-2 sm:right-6 bg-[#2f7a3a] text-white text-xs font-bold tracking-wider px-3 py-1.5 rounded-full shadow-lg">
-                  SEM SAL
-                </span>
-              )}
             </div>
           </div>
 
