@@ -238,8 +238,89 @@ function Hero() {
   );
 }
 
+function BenefitItem({
+  icon,
+  bold,
+  rest,
+}: {
+  icon: React.ReactNode;
+  bold: string;
+  rest: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-5 sm:gap-6">
+      <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-[#d4af5a]/40 flex items-center justify-center text-[#b8902f] bg-white shadow-[0_4px_12px_rgba(180,140,40,0.08)]">
+        {icon}
+      </div>
+      <p className="text-[#3a2a1a] text-base sm:text-lg leading-snug">
+        <span className="block">{rest}</span>
+        <span className="block font-bold">{bold}</span>
+      </p>
+    </div>
+  );
+}
+
+function BigGarlicIcon() {
+  return (
+    <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+      <path
+        d="M24 6 C18 10 14 16 14 24 C14 33 18 40 24 42 C30 40 34 33 34 24 C34 16 30 10 24 6 Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M24 6 L24 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M19 18 C18 24 19 34 22 41" stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
+      <path d="M29 18 C30 24 29 34 26 41" stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
+      <path d="M24 12 L24 41" stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
+    </svg>
+  );
+}
+
+function BigSpoonIcon() {
+  return (
+    <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+      <ellipse cx="24" cy="16" rx="11" ry="9" fill="currentColor" />
+      <path d="M24 25 L24 44" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function App() {
-  return <Hero />;
+  return (
+    <>
+      <Hero />
+      <BenefitsRow />
+    </>
+  );
+}
+
+function BenefitsRow() {
+  return (
+    <section className="bg-[#fbf7f0] py-14 sm:py-20 border-t-2 border-[#2a1d12]">
+      <div className="mx-auto max-w-6xl px-6 sm:px-10">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-12 md:gap-6">
+          <BenefitItem
+            icon={<BigGarlicIcon />}
+            rest={<>Já vem com</>}
+            bold={"sal na medida certa"}
+          />
+          <div className="hidden md:block w-px h-20 bg-[#2a1d12]/15" />
+          <BenefitItem
+            icon={<BigSpoonIcon />}
+            rest={<>Pronto</>}
+            bold={"para usar"}
+          />
+          <div className="hidden md:block w-px h-20 bg-[#2a1d12]/15" />
+          <BenefitItem
+            icon={<BigGarlicIcon />}
+            rest={<>Feito com</>}
+            bold={"alho selecionado"}
+          />
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default App;
