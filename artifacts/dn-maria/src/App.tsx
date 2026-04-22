@@ -118,31 +118,20 @@ function GarlicBulbIcon() {
 function Hero() {
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-[hsl(var(--background))]">
-      {/* Background scene */}
+      {/* Background image — positioned to the right so only product/garlic show */}
       <div
-        className="absolute inset-0 bg-no-repeat opacity-60 hidden md:block"
+        className="absolute inset-0 bg-no-repeat hidden md:block"
         style={{
           backgroundImage: `url(${heroImage})`,
           backgroundSize: "auto 110%",
           backgroundPosition: "right center",
         }}
       />
-      {/* Product photo overlay (right side) */}
-      <div className="absolute inset-y-0 right-0 hidden md:flex items-center pr-6 lg:pr-12 z-[1]">
-        <img
-          src={productImage}
-          alt="Pote DN. Maria Alho Triturado com Sal"
-          className="h-[78%] w-auto object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
-        />
-      </div>
-      {/* Mobile product */}
-      <div className="absolute inset-x-0 bottom-0 md:hidden flex justify-center pointer-events-none opacity-90">
-        <img
-          src={productImage}
-          alt=""
-          className="h-[42vh] w-auto object-contain"
-        />
-      </div>
+      {/* Mobile fallback — show full image cropped */}
+      <div
+        className="absolute inset-0 bg-cover bg-center md:hidden opacity-30"
+        style={{ backgroundImage: `url(${heroImage})` }}
+      />
       {/* Dark gradient overlay — fully cover left half to hide original text */}
       <div
         className="absolute inset-0"
