@@ -15,6 +15,9 @@ import {
   Plus,
   Truck,
   ChevronDown,
+  ChefHat,
+  Timer,
+  Award,
 } from "lucide-react";
 import heroImage from "@/assets/hero.png";
 import steakImage from "@/assets/ilustrativa.jpeg";
@@ -244,7 +247,7 @@ function BenefitItem({
 }) {
   return (
     <div className="flex items-center gap-5 sm:gap-6">
-      <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-[#d4af5a]/40 flex items-center justify-center text-[#b8902f] bg-white shadow-[0_4px_12px_rgba(180,140,40,0.08)]">
+      <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-[#d4af5a]/40 flex items-center justify-center text-[#b8902f] bg-white">
         {icon}
       </div>
       <p className="text-[#3a2a1a] text-base sm:text-lg leading-snug">
@@ -809,19 +812,19 @@ function BenefitsRow() {
       <div className="mx-auto max-w-6xl px-6 sm:px-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-12 md:gap-6">
           <BenefitItem
-            icon={<BigGarlicIcon />}
+            icon={<ChefHat className="w-10 h-10" strokeWidth={1.6} />}
             rest={<>Já vem com</>}
             bold={"sal na medida certa"}
           />
           <div className="hidden md:block w-px h-20 bg-[#2a1d12]/15" />
           <BenefitItem
-            icon={<BigSpoonIcon />}
+            icon={<Timer className="w-10 h-10" strokeWidth={1.6} />}
             rest={<>Pronto</>}
             bold={"para usar"}
           />
           <div className="hidden md:block w-px h-20 bg-[#2a1d12]/15" />
           <BenefitItem
-            icon={<BigGarlicIcon />}
+            icon={<Award className="w-10 h-10" strokeWidth={1.6} />}
             rest={<>Feito com</>}
             bold={"alho selecionado"}
           />
