@@ -443,17 +443,7 @@ function ProductInfoRow({
 function ProductInfoSection() {
   return (
     <section className="bg-white py-16 sm:py-24">
-      <div className="mx-auto max-w-6xl px-6 sm:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
-        <div className="flex justify-center">
-          <div className="w-full max-w-[360px] aspect-square rounded-2xl bg-gradient-to-br from-[#f5efe4] to-[#ece2cf] flex items-center justify-center p-6">
-            <img
-              src={productImage}
-              alt="Pote DN. Maria Alho Triturado com Sal"
-              className="w-full h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.18)]"
-            />
-          </div>
-        </div>
-
+      <div className="mx-auto max-w-3xl px-6 sm:px-10">
         <div>
           <h2 className="text-[#1a1a1a] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
             Informações do produto
@@ -504,13 +494,6 @@ function FooterCTA() {
           backgroundPosition: "right center",
         }}
       />
-      <div className="absolute inset-y-0 right-0 hidden md:flex items-center pr-8 z-[1]">
-        <img
-          src={productImage}
-          alt=""
-          className="h-[85%] w-auto object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
-        />
-      </div>
       <div
         className="absolute inset-0"
         style={{
