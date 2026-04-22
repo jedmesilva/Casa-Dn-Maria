@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ShoppingCart,
   Shield,
@@ -9,6 +10,11 @@ import {
   Refrigerator,
   Calendar,
   Weight,
+  Star,
+  Minus,
+  Plus,
+  Truck,
+  ChevronDown,
 } from "lucide-react";
 import heroImage from "@/assets/hero.png";
 import steakImage from "@/assets/steak.jpg";
@@ -440,56 +446,277 @@ function ProductInfoRow({
   );
 }
 
-function ProductInfoSection() {
+type Version = "com-sal" | "sem-sal";
+type Size = "200g" | "500g" | "1kg";
+
+const PRICE_TABLE: Record<Size, number> = {
+  "200g": 14.9,
+  "500g": 29.9,
+  "1kg": 49.9,
+};
+
+function formatBRL(value: number) {
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function ProductConfigurator() {
+  const [version, setVersion] = useState<Version>("com-sal");
+  const [size, setSize] = useState<Size>("1kg");
+  const [qty, setQty] = useState(1);
+  const [infoOpen, setInfoOpen] = useState(false);
+
+  const unitPrice = PRICE_TABLE[size];
+  const total = unitPrice * qty;
+  const ingredients =
+    version === "com-sal"
+      ? "Alho, sal e estabilizante (INS 330)."
+      : "Alho e estabilizante (INS 330).";
+
   return (
     <section className="bg-white py-16 sm:py-24">
-      <div className="mx-auto max-w-6xl px-6 sm:px-10 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
-        <div className="flex justify-center">
-          <img
-            src={productImage}
-            alt="Pote DN. Maria Alho Triturado com Sal"
-            className="w-full max-w-[360px] h-auto object-contain drop-shadow-[0_25px_40px_rgba(0,0,0,0.22)]"
-          />
+      <div className="mx-auto max-w-6xl px-6 sm:px-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+          {/* Image */}
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 -m-8 rounded-full bg-gradient-to-br from-[#fbf3df] to-[#f3e6c4] blur-2xl opacity-70" />
+              <img
+                src={productImage}
+                alt={`Pote DN. Maria Alho Triturado ${version === "com-sal" ? "com Sal" : "sem Sal"}`}
+                className="relative w-full max-w-[380px] h-auto object-contain drop-shadow-[0_25px_40px_rgba(0,0,0,0.22)]"
+              />
+              {version === "sem-sal" && (
+                <span className="absolute top-4 right-2 sm:right-6 bg-[#2f7a3a] text-white text-xs font-bold tracking-wider px-3 py-1.5 rounded-full shadow-lg">
+                  SEM SAL
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Configurator */}
+          <div>
+            <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-[#2f7a3a] bg-[#e9f4eb] px-3 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#2f7a3a]" />
+              Em estoque
+            </span>
+
+            <h2 className="mt-4 text-[#1a1a1a] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+              DN. Maria — Alho Triturado
+            </h2>
+            <p className="mt-2 text-[#5a5a5a] text-lg">
+              {version === "com-sal" ? "Versão com sal" : "Versão sem sal"} ·{" "}
+              {size}
+            </p>
+
+            <div className="mt-3 flex items-center gap-2 text-sm text-[#5a5a5a]">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star
+                    key={i}
+                    className="w-4 h-4 fill-[#d4af5a] text-[#d4af5a]"
+                  />
+                ))}
+              </div>
+              <span>4.9 · 124 avaliações</span>
+            </div>
+
+            {/* Price */}
+            <div className="mt-6 flex items-baseline gap-3">
+              <span className="text-[hsl(var(--primary))] text-4xl sm:text-5xl font-bold">
+                {formatBRL(total)}
+              </span>
+              {qty > 1 && (
+                <span className="text-[#8a8a8a] text-sm">
+                  ({formatBRL(unitPrice)} cada)
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-[#5a5a5a]">
+              ou em até 3x sem juros no cartão
+            </p>
+
+            {/* Version */}
+            <div className="mt-8">
+              <p className="text-sm font-semibold text-[#1a1a1a] uppercase tracking-wider">
+                Versão
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {(
+                  [
+                    { id: "com-sal" as Version, label: "Com sal" },
+                    { id: "sem-sal" as Version, label: "Sem sal" },
+                  ] as const
+                ).map((v) => {
+                  const active = version === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => setVersion(v.id)}
+                      data-testid={`button-version-${v.id}`}
+                      className={`relative px-4 py-3 rounded-lg border-2 text-left transition-all ${
+                        active
+                          ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5"
+                          : "border-[#e2e2e2] hover:border-[#c8a35a]"
+                      }`}
+                    >
+                      <span
+                        className={`block text-sm font-bold ${
+                          active ? "text-[hsl(var(--primary))]" : "text-[#1a1a1a]"
+                        }`}
+                      >
+                        {v.label}
+                      </span>
+                      <span className="block text-xs text-[#7a7a7a] mt-0.5">
+                        {v.id === "com-sal"
+                          ? "Pronto para temperar"
+                          : "Liberdade no sal"}
+                      </span>
+                      {active && (
+                        <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center">
+                          <CheckCircle2 className="w-3 h-3 text-white" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Size */}
+            <div className="mt-6">
+              <p className="text-sm font-semibold text-[#1a1a1a] uppercase tracking-wider">
+                Tamanho
+              </p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {(Object.keys(PRICE_TABLE) as Size[]).map((s) => {
+                  const active = size === s;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setSize(s)}
+                      data-testid={`button-size-${s}`}
+                      className={`min-w-[80px] px-5 py-3 rounded-lg border-2 font-bold transition-all ${
+                        active
+                          ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-white"
+                          : "border-[#e2e2e2] text-[#1a1a1a] hover:border-[#c8a35a]"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Quantity */}
+            <div className="mt-6">
+              <p className="text-sm font-semibold text-[#1a1a1a] uppercase tracking-wider">
+                Quantidade
+              </p>
+              <div className="mt-3 inline-flex items-center border-2 border-[#e2e2e2] rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  data-testid="button-qty-minus"
+                  className="px-4 py-3 text-[#1a1a1a] hover:bg-[#fbf7f0] transition-colors"
+                  aria-label="Diminuir quantidade"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="px-6 py-3 text-lg font-bold text-[#1a1a1a] min-w-[60px] text-center border-x-2 border-[#e2e2e2]">
+                  {qty}
+                </span>
+                <button
+                  onClick={() => setQty((q) => Math.min(99, q + 1))}
+                  data-testid="button-qty-plus"
+                  className="px-4 py-3 text-[#1a1a1a] hover:bg-[#fbf7f0] transition-colors"
+                  aria-label="Aumentar quantidade"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <button
+              data-testid="button-checkout"
+              className="mt-8 group inline-flex items-center justify-center gap-3 rounded-md bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 active:scale-[0.99] transition-all text-[hsl(var(--primary-foreground))] font-bold tracking-wide px-10 py-4 text-base sm:text-lg shadow-[0_10px_30px_-10px_rgba(220,40,40,0.6)] w-full"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              COMPRAR AGORA — {formatBRL(total)}
+            </button>
+
+            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[#5a5a5a]">
+              <span className="flex items-center gap-2">
+                <Truck className="h-4 w-4 text-[#b8902f]" />
+                Frete para todo o Brasil
+              </span>
+              <span className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-[#b8902f]" />
+                Compra 100% segura
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <h2 className="text-[#1a1a1a] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
-            Informações do produto
-          </h2>
-          <div className="mt-5 h-1 w-16 rounded-full bg-[#d4af5a]" />
+        {/* Info accordion */}
+        <div className="mt-16 sm:mt-20 max-w-4xl mx-auto">
+          <button
+            onClick={() => setInfoOpen((o) => !o)}
+            data-testid="button-info-toggle"
+            className="w-full flex items-center justify-between gap-4 px-6 py-5 rounded-xl border-2 border-[#e2e2e2] bg-[#fbf7f0] hover:border-[#c8a35a] transition-colors"
+          >
+            <span className="flex items-center gap-3 text-[#1a1a1a] text-lg sm:text-xl font-bold">
+              <span className="w-1 h-6 rounded-full bg-[#d4af5a]" />
+              Informações do produto
+            </span>
+            <ChevronDown
+              className={`w-6 h-6 text-[#5a5a5a] transition-transform ${
+                infoOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
 
-          <div className="mt-8 rounded-xl border border-[#2a1d12]/10 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-5 sm:px-6">
-            <ProductInfoRow
-              icon={<GarlicSmallIcon className="w-6 h-6" />}
-              title="Ingredientes:"
-            >
-              Alho, sal e estabilizante (INS 330).
-            </ProductInfoRow>
-            <ProductInfoRow
-              icon={<Refrigerator className="w-6 h-6" strokeWidth={1.7} />}
-              title="Armazenamento:"
-            >
-              Manter em local seco e fresco.
-              <br />
-              Após aberto, manter refrigerado.
-            </ProductInfoRow>
-            <ProductInfoRow
-              icon={<Calendar className="w-6 h-6" strokeWidth={1.7} />}
-              title="Validade:"
-            >
-              6 meses a partir da data de fabricação.
-            </ProductInfoRow>
-            <ProductInfoRow
-              icon={<Weight className="w-6 h-6" strokeWidth={1.7} />}
-              title="Peso líquido:"
-            >
-              1 kg
-            </ProductInfoRow>
-          </div>
+          {infoOpen && (
+            <div className="mt-3 rounded-xl border border-[#2a1d12]/10 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-5 sm:px-6">
+              <ProductInfoRow
+                icon={<GarlicSmallIcon className="w-6 h-6" />}
+                title="Ingredientes:"
+              >
+                {ingredients}
+              </ProductInfoRow>
+              <ProductInfoRow
+                icon={<Refrigerator className="w-6 h-6" strokeWidth={1.7} />}
+                title="Armazenamento:"
+              >
+                Manter em local seco e fresco.
+                <br />
+                Após aberto, manter refrigerado.
+              </ProductInfoRow>
+              <ProductInfoRow
+                icon={<Calendar className="w-6 h-6" strokeWidth={1.7} />}
+                title="Validade:"
+              >
+                6 meses a partir da data de fabricação.
+              </ProductInfoRow>
+              <ProductInfoRow
+                icon={<Weight className="w-6 h-6" strokeWidth={1.7} />}
+                title="Peso líquido:"
+              >
+                {size}
+              </ProductInfoRow>
+            </div>
+          )}
         </div>
       </div>
     </section>
   );
+}
+
+function ProductInfoSection() {
+  return <ProductConfigurator />;
 }
 
 function FooterCTA() {
