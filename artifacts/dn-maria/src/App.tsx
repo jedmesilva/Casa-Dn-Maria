@@ -17,7 +17,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import heroImage from "@/assets/hero.png";
-import steakImage from "@/assets/steak.jpg";
+import steakImage from "@/assets/ilustrativa.jpeg";
 import dishCarnes from "@/assets/carnes.png";
 import dishArroz from "@/assets/arroz.png";
 import dishMolhos from "@/assets/molhos.png";
