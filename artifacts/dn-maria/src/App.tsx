@@ -524,6 +524,75 @@ function ProductInfoSection() {
   );
 }
 
+function FooterCTA() {
+  return (
+    <section className="relative overflow-hidden">
+      <div
+        className="absolute inset-0 bg-no-repeat bg-cover"
+        style={{
+          backgroundImage: `url(${heroImage})`,
+          backgroundPosition: "right center",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(90deg, hsl(18 22% 8%) 0%, hsl(18 22% 8%) 35%, rgba(20,14,10,0.78) 50%, rgba(20,14,10,0.2) 70%, rgba(20,14,10,0) 88%)",
+        }}
+      />
+      <div className="relative z-10 mx-auto max-w-6xl px-6 sm:px-10 py-14 sm:py-20">
+        <div className="max-w-xl">
+          <h2 className="text-white text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
+            Tenha mais praticidade
+            <br />
+            <span className="text-[hsl(var(--accent))] font-bold">
+              na sua cozinha hoje.
+            </span>
+          </h2>
+
+          <button
+            className="mt-8 group inline-flex items-center justify-center gap-3 rounded-md bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 active:scale-[0.99] transition-all text-[hsl(var(--primary-foreground))] font-bold tracking-wide px-10 py-4 text-base sm:text-lg shadow-[0_10px_30px_-10px_rgba(220,40,40,0.6)] w-full max-w-md"
+            data-testid="button-buy-footer"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            COMPRAR AGORA
+          </button>
+
+          <div className="mt-6 flex items-center gap-6 text-sm text-white/75">
+            <span className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-[hsl(var(--accent))]" />
+              Compra segura
+            </span>
+            <span className="h-4 w-px bg-white/25" />
+            <span className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-[hsl(var(--accent))]" />
+              Privacidade protegida
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="bg-[#0f0a06] text-white/70 py-10 border-t border-white/10">
+      <div className="mx-auto max-w-6xl px-6 sm:px-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+        <div className="flex items-center gap-3 text-[hsl(var(--accent))]">
+          <span className="font-serif italic tracking-[0.3em] text-base">
+            DN. MARIA
+          </span>
+        </div>
+        <p className="text-white/50">
+          © {new Date().getFullYear()} DN. Maria — Todos os direitos reservados.
+        </p>
+      </div>
+    </footer>
+  );
+}
+
 function App() {
   return (
     <>
@@ -533,6 +602,8 @@ function App() {
       <DishesSection />
       <WhySection />
       <ProductInfoSection />
+      <FooterCTA />
+      <Footer />
     </>
   );
 }
