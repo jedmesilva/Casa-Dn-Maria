@@ -784,7 +784,7 @@ function Footer() {
       <div className="mx-auto max-w-6xl px-6 sm:px-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
         <img src={logoImage} alt="DN. Maria" className="h-14 w-auto" />
         <p className="text-white/50">
-          © {new Date().getFullYear()} DN. Maria — Todos os direitos reservados.
+          © {new Date().getFullYear()} Casa Dn. Maria — Todos os direitos reservados.
         </p>
       </div>
     </footer>
