@@ -1,6 +1,10 @@
 import { ShoppingCart, Shield, Lock } from "lucide-react";
 import heroImage from "@/assets/hero.png";
 import steakImage from "@/assets/steak.jpg";
+import dishCarnes from "@/assets/carnes.png";
+import dishArroz from "@/assets/arroz.png";
+import dishMolhos from "@/assets/molhos.png";
+import dishRefogados from "@/assets/refogados.png";
 
 function Logo() {
   return (
@@ -319,12 +323,46 @@ function FlavorSection() {
   );
 }
 
+function DishCircle({ src, label }: { src: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden ring-2 ring-[#d4af5a] ring-offset-4 ring-offset-[#fbf7f0] shadow-[0_8px_24px_rgba(180,140,40,0.15)]">
+        <img src={src} alt={label} className="w-full h-full object-cover" />
+      </div>
+      <p className="mt-5 text-[#2a1d12] text-base sm:text-lg">{label}</p>
+    </div>
+  );
+}
+
+function DishesSection() {
+  return (
+    <section className="bg-[#fbf7f0] py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-6 sm:px-10 text-center">
+        <h2 className="text-[#1a1a1a] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+          Ideal para
+          <br className="sm:hidden" />
+          <span className="sm:ml-2">diversos pratos</span>
+        </h2>
+        <div className="mx-auto mt-5 h-1 w-16 rounded-full bg-[#d4af5a]" />
+
+        <div className="mt-12 sm:mt-16 grid grid-cols-2 md:grid-cols-4 gap-10 sm:gap-8 justify-items-center">
+          <DishCircle src={dishCarnes} label="Carnes" />
+          <DishCircle src={dishArroz} label="Arroz e feijão" />
+          <DishCircle src={dishMolhos} label="Molhos" />
+          <DishCircle src={dishRefogados} label="Refogados" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function App() {
   return (
     <>
       <Hero />
       <BenefitsRow />
       <FlavorSection />
+      <DishesSection />
     </>
   );
 }

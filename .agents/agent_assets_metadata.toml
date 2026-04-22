@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "R4yIvbXXI96GSyxv0LUDw"
+uri = "file://artifacts/dn-maria/src/assets/carnes.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "FbHnobkdk2ufssGU5eBRx"
+uri = "file://artifacts/dn-maria/src/assets/arroz.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "CEfwbWnJgcG5C_bSdO8V5"
+uri = "file://artifacts/dn-maria/src/assets/molhos.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "8hGqqYwl2jrfA9HyoDXhz"
+uri = "file://artifacts/dn-maria/src/assets/refogados.png"
+type = "image"
+title = "generated_image"
