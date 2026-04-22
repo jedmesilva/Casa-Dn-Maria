@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import CheckoutModal from "@/components/CheckoutModal";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import {
   ShoppingCart,
   Shield,
@@ -466,7 +468,16 @@ function formatBRL(value: number) {
   });
 }
 
-function ProductConfigurator() {
+function ProductConfigurator({
+  onCheckout,
+}: {
+  onCheckout: (order: {
+    version: Version;
+    size: Size;
+    quantity: number;
+    total: number;
+  }) => void;
+}) {
   const [version, setVersion] = useState<Version>("com-sal");
   const [size, setSize] = useState<Size>("1kg");
   const [qty, setQty] = useState(1);
@@ -642,6 +653,7 @@ function ProductConfigurator() {
             {/* CTA */}
             <button
               data-testid="button-checkout"
+              onClick={() => onCheckout({ version, size, quantity: qty, total })}
               className="mt-8 group inline-flex items-center justify-center gap-3 rounded-md bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 active:scale-[0.99] transition-all text-[hsl(var(--primary-foreground))] font-bold tracking-wide px-10 py-4 text-base sm:text-lg shadow-[0_10px_30px_-10px_rgba(220,40,40,0.6)] w-full"
             >
               <ShoppingCart className="h-5 w-5" />
@@ -715,9 +727,6 @@ function ProductConfigurator() {
   );
 }
 
-function ProductInfoSection() {
-  return <ProductConfigurator />;
-}
 
 function FooterCTA() {
   return (
@@ -792,6 +801,30 @@ function Footer() {
 }
 
 function App() {
+  const [checkoutOrder, setCheckoutOrder] = useState<{
+    version: Version;
+    size: Size;
+    quantity: number;
+    total: number;
+  } | null>(null);
+  const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/checkout/config")
+      .then((r) => r.json())
+      .then((cfg) => {
+        if (cfg?.whatsappNumber) setWhatsappNumber(String(cfg.whatsappNumber));
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleCheckout = (order: {
+    version: Version;
+    size: Size;
+    quantity: number;
+    total: number;
+  }) => setCheckoutOrder(order);
+
   return (
     <>
       <Hero />
@@ -799,9 +832,22 @@ function App() {
       <FlavorSection />
       <DishesSection />
       <WhySection />
-      <ProductInfoSection />
+      <ProductConfigurator onCheckout={handleCheckout} />
       <FooterCTA />
       <Footer />
+      {whatsappNumber && <WhatsAppButton phone={whatsappNumber} />}
+      <CheckoutModal
+        open={checkoutOrder !== null}
+        onClose={() => setCheckoutOrder(null)}
+        order={
+          checkoutOrder ?? {
+            version: "com-sal",
+            size: "1kg",
+            quantity: 1,
+            total: 49.9,
+          }
+        }
+      />
     </>
   );
 }
