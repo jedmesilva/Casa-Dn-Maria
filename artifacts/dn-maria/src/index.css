@@ -1,0 +1,43 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --font-sans: var(--app-font-sans);
+  --font-serif: var(--app-font-serif);
+  --font-display: var(--app-font-display);
+}
+
+:root {
+  --background: 18 22% 8%;
+  --foreground: 40 30% 96%;
+  --border: 40 20% 20%;
+  --primary: 0 75% 50%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 40 65% 60%;
+  --muted: 18 15% 14%;
+  --muted-foreground: 40 15% 70%;
+
+  --app-font-sans: 'Inter', system-ui, sans-serif;
+  --app-font-serif: 'Playfair Display', Georgia, serif;
+  --app-font-display: 'Bebas Neue', 'Oswald', Impact, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    @apply font-sans antialiased;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
