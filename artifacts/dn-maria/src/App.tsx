@@ -1,4 +1,4 @@
-import { ShoppingCart, Shield, Lock } from "lucide-react";
+import { ShoppingCart, Shield, Lock, Heart, ShieldCheck, Leaf, CheckCircle2 } from "lucide-react";
 import heroImage from "@/assets/hero.png";
 import steakImage from "@/assets/steak.jpg";
 import dishCarnes from "@/assets/carnes.png";
@@ -356,6 +356,66 @@ function DishesSection() {
   );
 }
 
+function WhyItem({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: React.ReactNode;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center px-2">
+      <div className="text-[#b8902f]">{icon}</div>
+      <h3 className="mt-5 text-[#1a1a1a] text-lg sm:text-xl font-bold leading-tight">
+        {title}
+      </h3>
+      <p className="mt-3 text-[#5a5a5a] text-sm sm:text-base leading-relaxed max-w-[200px]">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function WhySection() {
+  return (
+    <section className="bg-[#fbf7f0] py-16 sm:py-24 border-t border-[#2a1d12]/10">
+      <div className="mx-auto max-w-6xl px-6 sm:px-10 text-center">
+        <h2 className="text-[#1a1a1a] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+          Por que escolher
+          <br />
+          DN. Maria?
+        </h2>
+        <div className="mx-auto mt-5 h-1 w-16 rounded-full bg-[#d4af5a]" />
+
+        <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 sm:gap-8">
+          <WhyItem
+            icon={<Heart className="w-12 h-12" strokeWidth={1.5} />}
+            title={<>Sabor<br />equilibrado</>}
+            description="Sal na medida certa para realçar suas receitas."
+          />
+          <WhyItem
+            icon={<ShieldCheck className="w-12 h-12" strokeWidth={1.5} />}
+            title={<>Qualidade<br />premium</>}
+            description="Alhos selecionados e processo cuidadoso."
+          />
+          <WhyItem
+            icon={<Leaf className="w-12 h-12" strokeWidth={1.5} />}
+            title={<>Sem<br />conservantes</>}
+            description="Produto natural, sem aditivos químicos."
+          />
+          <WhyItem
+            icon={<CheckCircle2 className="w-12 h-12" strokeWidth={1.5} />}
+            title={<>Consistência<br />ideal</>}
+            description="Textura perfeita para facilitar sua rotina na cozinha."
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function App() {
   return (
     <>
@@ -363,6 +423,7 @@ function App() {
       <BenefitsRow />
       <FlavorSection />
       <DishesSection />
+      <WhySection />
     </>
   );
 }
