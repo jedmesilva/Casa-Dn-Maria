@@ -123,10 +123,16 @@ router.post("/checkout/card", async (req, res) => {
       transaction_amount: payment.transaction_amount,
     });
   } catch (err: unknown) {
-    const error = err as { message?: string; cause?: unknown };
+    const error = err as {
+      message?: string;
+      cause?: Array<{ code?: string; description?: string }> | unknown;
+    };
     logger.error({ err }, "Card payment error");
+    const causeArr = Array.isArray(error.cause) ? error.cause : [];
+    const detail =
+      causeArr[0]?.code || causeArr[0]?.description || error.message;
     return res.status(400).json({
-      error: error.message ?? "Falha ao processar pagamento",
+      error: detail ?? "Falha ao processar pagamento",
       cause: error.cause,
     });
   }

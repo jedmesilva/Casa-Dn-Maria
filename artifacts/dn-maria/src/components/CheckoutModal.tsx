@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, Loader2, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 
 declare global {
   interface Window {
@@ -27,7 +27,11 @@ interface PaymentBrickController {
 interface PaymentBrickSettings {
   initialization: {
     amount: number;
-    payer?: { email?: string };
+    payer?: {
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+    };
   };
   customization: {
     paymentMethods: {
@@ -42,18 +46,21 @@ interface PaymentBrickSettings {
   };
   callbacks: {
     onReady: () => void;
-    onSubmit: (param: { formData: Record<string, unknown> }) => Promise<void>;
+    onSubmit: (param: {
+      selectedPaymentMethod?: string;
+      formData: Record<string, unknown>;
+    }) => Promise<void>;
     onError: (error: unknown) => void;
   };
 }
 
 const SDK_URL = "https://sdk.mercadopago.com/js/v2";
-const BASE_URL = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") + "/";
 const API_BASE = "/api";
 
 type Status =
   | { kind: "loading" }
   | { kind: "config-error"; message: string }
+  | { kind: "collect-payer" }
   | { kind: "ready" }
   | { kind: "processing" }
   | { kind: "success"; paymentId: string }
@@ -69,6 +76,13 @@ interface Props {
     quantity: number;
     total: number;
   };
+}
+
+interface Payer {
+  firstName: string;
+  lastName: string;
+  email: string;
+  cpf: string;
 }
 
 function loadScript(src: string): Promise<void> {
@@ -95,41 +109,93 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
+function friendlyMpError(raw: string | undefined): string {
+  if (!raw) return "Não foi possível concluir o pagamento.";
+  const map: Record<string, string> = {
+    bin_not_found:
+      "Cartão não reconhecido. Confira o número ou tente outro cartão.",
+    cc_rejected_bad_filled_card_number: "Número do cartão inválido.",
+    cc_rejected_bad_filled_date: "Data de validade inválida.",
+    cc_rejected_bad_filled_security_code: "Código de segurança inválido.",
+    cc_rejected_bad_filled_other: "Verifique os dados do cartão.",
+    cc_rejected_insufficient_amount: "Cartão sem saldo suficiente.",
+    cc_rejected_high_risk: "Pagamento recusado por análise de risco.",
+    cc_rejected_call_for_authorize:
+      "Você precisa autorizar o pagamento com o seu banco.",
+    cc_rejected_card_disabled: "Cartão inativo. Ligue para o seu banco.",
+    cc_rejected_duplicated_payment: "Pagamento duplicado.",
+    cc_rejected_other_reason: "Pagamento recusado pelo banco emissor.",
+    invalid_payer_email: "E-mail do comprador inválido.",
+    invalid_users_involved: "Não é possível pagar para si mesmo no modo teste.",
+  };
+  for (const [code, msg] of Object.entries(map)) {
+    if (raw.includes(code)) return msg;
+  }
+  return raw;
+}
+
 export default function CheckoutModal({ open, onClose, order }: Props) {
   const [status, setStatus] = useState<Status>({ kind: "loading" });
+  const [payer, setPayer] = useState<Payer>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    cpf: "",
+  });
+  const [publicKey, setPublicKey] = useState<string | null>(null);
   const brickRef = useRef<PaymentBrickController | null>(null);
   const containerId = "mp-payment-brick-container";
 
-  // Mount brick when open
+  // Load config when modal opens
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     setStatus({ kind: "loading" });
-
+    setPublicKey(null);
     (async () => {
       try {
         const cfgRes = await fetch(`${API_BASE}/checkout/config`);
         const cfg = await cfgRes.json();
-        if (!cfg.enabled || !cfg.publicKey) {
-          if (!cancelled)
-            setStatus({
-              kind: "config-error",
-              message: "Checkout não configurado. Tente novamente mais tarde.",
-            });
-          return;
-        }
-
-        await loadScript(SDK_URL);
         if (cancelled) return;
-        if (!window.MercadoPago) {
-          setStatus({ kind: "config-error", message: "Falha ao carregar SDK." });
+        if (!cfg.enabled || !cfg.publicKey) {
+          setStatus({
+            kind: "config-error",
+            message: "Checkout não configurado. Tente novamente mais tarde.",
+          });
           return;
         }
+        setPublicKey(cfg.publicKey);
+        setStatus({ kind: "collect-payer" });
+      } catch {
+        if (!cancelled)
+          setStatus({
+            kind: "config-error",
+            message: "Não foi possível iniciar o checkout.",
+          });
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (brickRef.current) {
+        brickRef.current.unmount();
+        brickRef.current = null;
+      }
+    };
+  }, [open]);
 
-        const mp = new window.MercadoPago(cfg.publicKey, { locale: "pt-BR" });
+  // Mount Brick once payer is collected
+  useEffect(() => {
+    if (status.kind !== "ready" || !publicKey) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        await loadScript(SDK_URL);
+        if (cancelled || !window.MercadoPago) return;
+
+        const mp = new window.MercadoPago(publicKey, { locale: "pt-BR" });
         const bricksBuilder = mp.bricks();
 
-        // Wait for the container to exist in the DOM
         await new Promise((r) => requestAnimationFrame(() => r(null)));
 
         if (brickRef.current) {
@@ -143,6 +209,11 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
           {
             initialization: {
               amount: order.total,
+              payer: {
+                email: payer.email,
+                firstName: payer.firstName,
+                lastName: payer.lastName,
+              },
             },
             customization: {
               paymentMethods: {
@@ -151,87 +222,113 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
                 bankTransfer: ["pix"],
                 maxInstallments: 3,
               },
-              visual: {
-                style: { theme: "default" },
-              },
+              visual: { style: { theme: "default" } },
             },
             callbacks: {
               onReady: () => {
-                if (!cancelled) setStatus({ kind: "ready" });
+                /* brick is mounted */
               },
-              onSubmit: async ({ formData }) => {
-                setStatus({ kind: "processing" });
-                try {
+              onSubmit: ({ selectedPaymentMethod, formData }) => {
+                return new Promise<void>((resolve, reject) => {
+                  setStatus({ kind: "processing" });
                   const isPix =
+                    selectedPaymentMethod === "bank_transfer" ||
                     (formData as { payment_method_id?: string })
                       .payment_method_id === "pix";
                   const endpoint = isPix
                     ? `${API_BASE}/checkout/pix`
                     : `${API_BASE}/checkout/card`;
-                  const res = await fetch(endpoint, {
+                  const fullPayer = {
+                    ...((formData as Record<string, unknown>)["payer"] as
+                      | Record<string, unknown>
+                      | undefined),
+                    email: payer.email,
+                    first_name: payer.firstName,
+                    last_name: payer.lastName,
+                    identification: {
+                      type: "CPF",
+                      number: payer.cpf.replace(/\D/g, ""),
+                    },
+                  };
+                  fetch(endpoint, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ...formData, order }),
-                  });
-                  const data = await res.json();
-                  if (!res.ok) {
-                    setStatus({
-                      kind: "error",
-                      message: data.error || "Pagamento recusado",
+                    body: JSON.stringify({
+                      ...formData,
+                      payer: fullPayer,
+                      order,
+                    }),
+                  })
+                    .then(async (res) => {
+                      const data = await res.json();
+                      if (!res.ok) {
+                        setStatus({
+                          kind: "error",
+                          message: friendlyMpError(data.error),
+                        });
+                        reject(new Error(data.error || "payment_error"));
+                        return;
+                      }
+                      if (isPix && data.qr_code_base64) {
+                        setStatus({
+                          kind: "pending-pix",
+                          qrBase64: data.qr_code_base64,
+                          qrCode: data.qr_code,
+                          paymentId: String(data.id),
+                        });
+                        resolve();
+                      } else if (
+                        data.status === "approved" ||
+                        data.status === "in_process"
+                      ) {
+                        setStatus({
+                          kind: "success",
+                          paymentId: String(data.id),
+                        });
+                        resolve();
+                      } else {
+                        setStatus({
+                          kind: "error",
+                          message: friendlyMpError(
+                            data.status_detail || data.status,
+                          ),
+                        });
+                        reject(new Error(data.status_detail || "rejected"));
+                      }
+                    })
+                    .catch((err) => {
+                      setStatus({
+                        kind: "error",
+                        message: "Falha de rede ao processar pagamento.",
+                      });
+                      reject(err);
                     });
-                    return;
-                  }
-                  if (isPix && data.qr_code_base64) {
-                    setStatus({
-                      kind: "pending-pix",
-                      qrBase64: data.qr_code_base64,
-                      qrCode: data.qr_code,
-                      paymentId: String(data.id),
-                    });
-                  } else if (
-                    data.status === "approved" ||
-                    data.status === "in_process"
-                  ) {
-                    setStatus({
-                      kind: "success",
-                      paymentId: String(data.id),
-                    });
-                  } else {
-                    setStatus({
-                      kind: "error",
-                      message: `Pagamento ${data.status_detail || data.status}`,
-                    });
-                  }
-                } catch (err) {
-                  setStatus({
-                    kind: "error",
-                    message: "Falha de rede ao processar pagamento",
-                  });
-                }
+                });
               },
               onError: (err) => {
                 console.error("Brick error", err);
+                const msg =
+                  (err as { message?: string })?.message ||
+                  "Verifique os dados e tente novamente.";
+                setStatus({ kind: "error", message: friendlyMpError(msg) });
               },
             },
           },
         );
       } catch (err) {
+        console.error("Mount error", err);
         if (!cancelled)
           setStatus({
             kind: "config-error",
-            message: "Não foi possível iniciar o checkout.",
+            message: "Não foi possível carregar o formulário de pagamento.",
           });
       }
     })();
 
     return () => {
       cancelled = true;
-      if (brickRef.current) {
-        brickRef.current.unmount();
-        brickRef.current = null;
-      }
     };
-  }, [open, order.total, order.version, order.size, order.quantity]);
+  }, [status.kind, publicKey, order, payer]);
 
   // Poll Pix status
   useEffect(() => {
@@ -255,6 +352,12 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
   if (!open) return null;
 
   const versionLabel = order.version === "com-sal" ? "Com sal" : "Sem sal";
+
+  const payerValid =
+    payer.firstName.trim().length > 1 &&
+    payer.lastName.trim().length > 1 &&
+    /\S+@\S+\.\S+/.test(payer.email) &&
+    payer.cpf.replace(/\D/g, "").length === 11;
 
   return (
     <div
@@ -314,6 +417,87 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
             </div>
           )}
 
+          {status.kind === "collect-payer" && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-base font-bold text-[#1a1a1a]">
+                  Seus dados
+                </h4>
+                <p className="text-sm text-[#5a5a5a] mt-1">
+                  Precisamos dessas informações para emitir a nota e processar o
+                  pagamento.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs font-semibold text-[#5a5a5a] uppercase tracking-wider">
+                    Nome
+                  </span>
+                  <input
+                    type="text"
+                    data-testid="input-firstname"
+                    value={payer.firstName}
+                    onChange={(e) =>
+                      setPayer({ ...payer, firstName: e.target.value })
+                    }
+                    className="mt-1 w-full px-3 py-2 border border-[#e2e2e2] rounded-md focus:outline-none focus:border-[#b8902f]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold text-[#5a5a5a] uppercase tracking-wider">
+                    Sobrenome
+                  </span>
+                  <input
+                    type="text"
+                    data-testid="input-lastname"
+                    value={payer.lastName}
+                    onChange={(e) =>
+                      setPayer({ ...payer, lastName: e.target.value })
+                    }
+                    className="mt-1 w-full px-3 py-2 border border-[#e2e2e2] rounded-md focus:outline-none focus:border-[#b8902f]"
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <span className="text-xs font-semibold text-[#5a5a5a] uppercase tracking-wider">
+                  E-mail
+                </span>
+                <input
+                  type="email"
+                  data-testid="input-email"
+                  value={payer.email}
+                  onChange={(e) =>
+                    setPayer({ ...payer, email: e.target.value })
+                  }
+                  className="mt-1 w-full px-3 py-2 border border-[#e2e2e2] rounded-md focus:outline-none focus:border-[#b8902f]"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-[#5a5a5a] uppercase tracking-wider">
+                  CPF
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  data-testid="input-cpf"
+                  value={payer.cpf}
+                  onChange={(e) => setPayer({ ...payer, cpf: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-[#e2e2e2] rounded-md focus:outline-none focus:border-[#b8902f]"
+                />
+              </label>
+              <button
+                disabled={!payerValid}
+                data-testid="button-continue-payment"
+                onClick={() => setStatus({ kind: "ready" })}
+                className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-md bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 transition-colors"
+              >
+                Continuar para pagamento
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {status.kind === "processing" && (
             <div className="flex flex-col items-center text-center py-16">
               <Loader2 className="w-10 h-10 text-[#b8902f] animate-spin mb-3" />
@@ -335,7 +519,7 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
                 Pagamento aprovado!
               </h4>
               <p className="mt-2 text-[#5a5a5a] max-w-sm">
-                Recebemos seu pedido. Em breve você receberá um email com a
+                Recebemos seu pedido. Em breve você receberá um e-mail com a
                 confirmação e o código de rastreamento.
               </p>
               <p className="mt-4 text-xs text-[#9a9a9a]">
@@ -399,7 +583,7 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
               </h4>
               <p className="mt-1 text-[#5a5a5a] max-w-sm">{status.message}</p>
               <button
-                onClick={() => setStatus({ kind: "ready" })}
+                onClick={() => setStatus({ kind: "collect-payer" })}
                 data-testid="button-retry-checkout"
                 className="mt-5 px-6 py-3 rounded-md bg-[hsl(var(--primary))] text-white font-bold hover:bg-[hsl(var(--primary))]/90"
               >
@@ -408,7 +592,7 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
             </div>
           )}
 
-          {/* Brick container — kept mounted while ready/processing/etc that allow form */}
+          {/* Brick container */}
           <div
             id={containerId}
             className={
