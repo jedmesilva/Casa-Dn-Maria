@@ -41,7 +41,12 @@ interface PaymentBrickController {
 interface PaymentBrickSettings {
   initialization: {
     amount: number;
-    payer?: { email?: string; firstName?: string; lastName?: string };
+    payer?: {
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+      identification?: { type: string; number: string };
+    };
   };
   customization: {
     paymentMethods: {
@@ -297,6 +302,10 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
               email: payer.email,
               firstName: payer.firstName,
               lastName: payer.lastName,
+              identification: {
+                type: "CPF",
+                number: payer.cpf.replace(/\D/g, ""),
+              },
             },
           },
           customization: {
