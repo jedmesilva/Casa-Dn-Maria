@@ -129,7 +129,7 @@ function GarlicBulbIcon() {
 
 function Hero() {
   return (
-    <section className="relative min-h-screen w-full overflow-hidden bg-[hsl(var(--background))]">
+    <section className="relative min-h-[100svh] w-full overflow-hidden bg-[hsl(var(--background))] transform-gpu [backface-visibility:hidden]">
       {/* Background image — positioned to the right so only product/garlic show */}
       <div
         className="absolute inset-0 bg-no-repeat hidden md:block"
@@ -864,7 +864,7 @@ function App() {
 
 function BenefitsRow() {
   return (
-    <section className="bg-[#fbf7f0] py-14 sm:py-20 border-t-2 border-[#2a1d12]">
+    <section className="relative isolate bg-[#fbf7f0] py-14 sm:py-20 border-t-2 border-[#2a1d12]">
       <div className="mx-auto max-w-6xl px-6 sm:px-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-12 md:gap-6">
           <BenefitItem
