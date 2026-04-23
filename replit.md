@@ -89,11 +89,15 @@ pnpm workspace monorepo (TypeScript). Loja de página única para o produto
 
 ### Frontend → Vercel
 
-1. `vercel.json` já presente em `artifacts/dn-maria`. Importar repo na Vercel
-   apontando para esse diretório.
-2. Variável: `VITE_API_BASE_URL=https://<api-no-railway>`.
-3. Build: `pnpm --filter @workspace/dn-maria build` → output `dist/public`.
+1. `vercel.json` está na **raiz do repo** (necessário por causa do pnpm
+   workspace + protocolo `catalog:`). Importar o repo na Vercel mantendo
+   "Root Directory" = raiz.
+2. Variável: `VITE_API_BASE_URL=https://<api-no-railway>` (sem barra final).
+3. Build: `pnpm --filter @workspace/dn-maria build` → output
+   `artifacts/dn-maria/dist/public`.
 4. SPA rewrites e cache de assets já configurados.
+5. Node ≥22 e pnpm 10 garantidos pelos campos `engines` e `packageManager`
+   no `package.json` da raiz.
 
 ## Pendências futuras (não bloqueiam o lançamento)
 

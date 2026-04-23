@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm --filter @workspace/dn-maria build",
-  "outputDirectory": "dist/public",
+  "outputDirectory": "artifacts/dn-maria/dist/public",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
   "rewrites": [
