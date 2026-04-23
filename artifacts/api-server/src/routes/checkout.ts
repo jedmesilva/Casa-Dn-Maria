@@ -103,12 +103,15 @@ router.post("/checkout/card", async (req, res) => {
           first_name: payer.first_name,
           last_name: payer.last_name,
           identification: payer.identification,
+          phone: payer.phone,
+          address: payer.address,
         },
         statement_descriptor: "DN MARIA",
         metadata: {
           version: order.version,
           size: order.size,
           quantity: order.quantity,
+          shipping: req.body?.shipping,
         },
       },
       requestOptions: {
