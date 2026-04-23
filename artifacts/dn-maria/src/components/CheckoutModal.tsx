@@ -68,7 +68,13 @@ interface PaymentBrickSettings {
 }
 
 const SDK_URL = "https://sdk.mercadopago.com/js/v2";
-const API_BASE = "/api";
+const API_BASE = (() => {
+  const raw = (import.meta.env.VITE_API_BASE_URL ?? "").toString().trim();
+  if (!raw) return "/api";
+  return raw.replace(/\/+$/, "") + "/api";
+})();
+const PIX_POLL_TIMEOUT_MS = 15 * 60 * 1000;
+const PIX_POLL_INTERVAL_MS = 4000;
 
 type Step = "details" | "payment";
 
@@ -435,23 +441,43 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
     };
   }, [open, step, publicKey, order, payer, address]);
 
-  // Poll Pix status
+  // Poll Pix status (with timeout)
   useEffect(() => {
     if (status.kind !== "pending-pix") return;
     const id = status.paymentId;
+    const startedAt = Date.now();
+    let stopped = false;
     const interval = setInterval(async () => {
+      if (stopped) return;
+      if (Date.now() - startedAt > PIX_POLL_TIMEOUT_MS) {
+        stopped = true;
+        clearInterval(interval);
+        return;
+      }
       try {
         const res = await fetch(`${API_BASE}/checkout/status/${id}`);
         if (!res.ok) return;
         const data = await res.json();
         if (data.status === "approved") {
+          stopped = true;
+          clearInterval(interval);
           setStatus({ kind: "success", paymentId: id });
+        } else if (data.status === "cancelled" || data.status === "rejected") {
+          stopped = true;
+          clearInterval(interval);
+          setStatus({
+            kind: "error",
+            message: "Pagamento Pix não foi concluído.",
+          });
         }
       } catch {
         /* keep polling */
       }
-    }, 4000);
-    return () => clearInterval(interval);
+    }, PIX_POLL_INTERVAL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
   }, [status]);
 
   if (!open) return null;
