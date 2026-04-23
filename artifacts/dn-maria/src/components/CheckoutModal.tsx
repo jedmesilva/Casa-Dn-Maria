@@ -1,5 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Loader2, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  Lock,
+  ShieldCheck,
+} from "lucide-react";
+import logo from "@/assets/logo.png";
+import productImage from "@/assets/product-nobg.png";
+import productSemSalImage from "@/assets/product-semsal-nobg.png";
 
 declare global {
   interface Window {
@@ -27,11 +38,7 @@ interface PaymentBrickController {
 interface PaymentBrickSettings {
   initialization: {
     amount: number;
-    payer?: {
-      email?: string;
-      firstName?: string;
-      lastName?: string;
-    };
+    payer?: { email?: string; firstName?: string; lastName?: string };
   };
   customization: {
     paymentMethods: {
@@ -40,9 +47,7 @@ interface PaymentBrickSettings {
       bankTransfer?: string[];
       maxInstallments?: number;
     };
-    visual?: {
-      style?: { theme?: string };
-    };
+    visual?: { style?: { theme?: string } };
   };
   callbacks: {
     onReady: () => void;
@@ -57,11 +62,12 @@ interface PaymentBrickSettings {
 const SDK_URL = "https://sdk.mercadopago.com/js/v2";
 const API_BASE = "/api";
 
+type Step = "payer" | "payment";
+
 type Status =
-  | { kind: "loading" }
+  | { kind: "idle" }
+  | { kind: "loading-config" }
   | { kind: "config-error"; message: string }
-  | { kind: "collect-payer" }
-  | { kind: "ready" }
   | { kind: "processing" }
   | { kind: "success"; paymentId: string }
   | { kind: "pending-pix"; qrBase64: string; qrCode: string; paymentId: string }
@@ -93,7 +99,9 @@ function loadScript(src: string): Promise<void> {
         resolve();
       } else {
         existing.addEventListener("load", () => resolve());
-        existing.addEventListener("error", () => reject(new Error("SDK load failed")));
+        existing.addEventListener("error", () =>
+          reject(new Error("SDK load failed")),
+        );
       }
       return;
     }
@@ -126,7 +134,8 @@ function friendlyMpError(raw: string | undefined): string {
     cc_rejected_duplicated_payment: "Pagamento duplicado.",
     cc_rejected_other_reason: "Pagamento recusado pelo banco emissor.",
     invalid_payer_email: "E-mail do comprador inválido.",
-    invalid_users_involved: "Não é possível pagar para si mesmo no modo teste.",
+    invalid_users_involved:
+      "Em modo teste, use um e-mail diferente do dono da conta MP.",
   };
   for (const [code, msg] of Object.entries(map)) {
     if (raw.includes(code)) return msg;
@@ -134,8 +143,17 @@ function friendlyMpError(raw: string | undefined): string {
   return raw;
 }
 
+function formatCpf(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
 export default function CheckoutModal({ open, onClose, order }: Props) {
-  const [status, setStatus] = useState<Status>({ kind: "loading" });
+  const [step, setStep] = useState<Step>("payer");
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [payer, setPayer] = useState<Payer>({
     firstName: "",
     lastName: "",
@@ -146,12 +164,13 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
   const brickRef = useRef<PaymentBrickController | null>(null);
   const containerId = "mp-payment-brick-container";
 
-  // Load config when modal opens
+  // Reset state when entering checkout
   useEffect(() => {
     if (!open) return;
-    let cancelled = false;
-    setStatus({ kind: "loading" });
+    setStep("payer");
+    setStatus({ kind: "loading-config" });
     setPublicKey(null);
+    let cancelled = false;
     (async () => {
       try {
         const cfgRes = await fetch(`${API_BASE}/checkout/config`);
@@ -165,7 +184,7 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
           return;
         }
         setPublicKey(cfg.publicKey);
-        setStatus({ kind: "collect-payer" });
+        setStatus({ kind: "idle" });
       } catch {
         if (!cancelled)
           setStatus({
@@ -183,138 +202,129 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
     };
   }, [open]);
 
-  // Mount Brick once payer is collected
+  // Mount Brick when reaching the payment step
   useEffect(() => {
-    if (status.kind !== "ready" || !publicKey) return;
+    if (!open || step !== "payment" || !publicKey) return;
     let cancelled = false;
-
     (async () => {
       try {
         await loadScript(SDK_URL);
         if (cancelled || !window.MercadoPago) return;
-
         const mp = new window.MercadoPago(publicKey, { locale: "pt-BR" });
         const bricksBuilder = mp.bricks();
-
         await new Promise((r) => requestAnimationFrame(() => r(null)));
-
         if (brickRef.current) {
           brickRef.current.unmount();
           brickRef.current = null;
         }
-
-        brickRef.current = await bricksBuilder.create(
-          "payment",
-          containerId,
-          {
-            initialization: {
-              amount: order.total,
-              payer: {
-                email: payer.email,
-                firstName: payer.firstName,
-                lastName: payer.lastName,
-              },
-            },
-            customization: {
-              paymentMethods: {
-                creditCard: "all",
-                debitCard: "all",
-                bankTransfer: ["pix"],
-                maxInstallments: 3,
-              },
-              visual: { style: { theme: "default" } },
-            },
-            callbacks: {
-              onReady: () => {
-                /* brick is mounted */
-              },
-              onSubmit: ({ selectedPaymentMethod, formData }) => {
-                return new Promise<void>((resolve, reject) => {
-                  setStatus({ kind: "processing" });
-                  const isPix =
-                    selectedPaymentMethod === "bank_transfer" ||
-                    (formData as { payment_method_id?: string })
-                      .payment_method_id === "pix";
-                  const endpoint = isPix
-                    ? `${API_BASE}/checkout/pix`
-                    : `${API_BASE}/checkout/card`;
-                  const fullPayer = {
-                    ...((formData as Record<string, unknown>)["payer"] as
-                      | Record<string, unknown>
-                      | undefined),
-                    email: payer.email,
-                    first_name: payer.firstName,
-                    last_name: payer.lastName,
-                    identification: {
-                      type: "CPF",
-                      number: payer.cpf.replace(/\D/g, ""),
-                    },
-                  };
-                  fetch(endpoint, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      ...formData,
-                      payer: fullPayer,
-                      order,
-                    }),
-                  })
-                    .then(async (res) => {
-                      const data = await res.json();
-                      if (!res.ok) {
-                        setStatus({
-                          kind: "error",
-                          message: friendlyMpError(data.error),
-                        });
-                        reject(new Error(data.error || "payment_error"));
-                        return;
-                      }
-                      if (isPix && data.qr_code_base64) {
-                        setStatus({
-                          kind: "pending-pix",
-                          qrBase64: data.qr_code_base64,
-                          qrCode: data.qr_code,
-                          paymentId: String(data.id),
-                        });
-                        resolve();
-                      } else if (
-                        data.status === "approved" ||
-                        data.status === "in_process"
-                      ) {
-                        setStatus({
-                          kind: "success",
-                          paymentId: String(data.id),
-                        });
-                        resolve();
-                      } else {
-                        setStatus({
-                          kind: "error",
-                          message: friendlyMpError(
-                            data.status_detail || data.status,
-                          ),
-                        });
-                        reject(new Error(data.status_detail || "rejected"));
-                      }
-                    })
-                    .catch((err) => {
-                      setStatus({
-                        kind: "error",
-                        message: "Falha de rede ao processar pagamento.",
-                      });
-                      reject(err);
-                    });
-                });
-              },
-              onError: (err) => {
-                console.error("Brick error", err);
-                const msg =
-                  (err as { message?: string })?.message ||
-                  "Verifique os dados e tente novamente.";
-                setStatus({ kind: "error", message: friendlyMpError(msg) });
-              },
+        brickRef.current = await bricksBuilder.create("payment", containerId, {
+          initialization: {
+            amount: order.total,
+            payer: {
+              email: payer.email,
+              firstName: payer.firstName,
+              lastName: payer.lastName,
             },
           },
-        );
+          customization: {
+            paymentMethods: {
+              creditCard: "all",
+              debitCard: "all",
+              bankTransfer: ["pix"],
+              maxInstallments: 3,
+            },
+            visual: { style: { theme: "default" } },
+          },
+          callbacks: {
+            onReady: () => {
+              /* mounted */
+            },
+            onSubmit: ({ selectedPaymentMethod, formData }) => {
+              return new Promise<void>((resolve, reject) => {
+                setStatus({ kind: "processing" });
+                const isPix =
+                  selectedPaymentMethod === "bank_transfer" ||
+                  (formData as { payment_method_id?: string })
+                    .payment_method_id === "pix";
+                const endpoint = isPix
+                  ? `${API_BASE}/checkout/pix`
+                  : `${API_BASE}/checkout/card`;
+                const fullPayer = {
+                  ...((formData as Record<string, unknown>)["payer"] as
+                    | Record<string, unknown>
+                    | undefined),
+                  email: payer.email,
+                  first_name: payer.firstName,
+                  last_name: payer.lastName,
+                  identification: {
+                    type: "CPF",
+                    number: payer.cpf.replace(/\D/g, ""),
+                  },
+                };
+                fetch(endpoint, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    ...formData,
+                    payer: fullPayer,
+                    order,
+                  }),
+                })
+                  .then(async (res) => {
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setStatus({
+                        kind: "error",
+                        message: friendlyMpError(data.error),
+                      });
+                      reject(new Error(data.error || "payment_error"));
+                      return;
+                    }
+                    if (isPix && data.qr_code_base64) {
+                      setStatus({
+                        kind: "pending-pix",
+                        qrBase64: data.qr_code_base64,
+                        qrCode: data.qr_code,
+                        paymentId: String(data.id),
+                      });
+                      resolve();
+                    } else if (
+                      data.status === "approved" ||
+                      data.status === "in_process"
+                    ) {
+                      setStatus({
+                        kind: "success",
+                        paymentId: String(data.id),
+                      });
+                      resolve();
+                    } else {
+                      setStatus({
+                        kind: "error",
+                        message: friendlyMpError(
+                          data.status_detail || data.status,
+                        ),
+                      });
+                      reject(new Error(data.status_detail || "rejected"));
+                    }
+                  })
+                  .catch((err) => {
+                    setStatus({
+                      kind: "error",
+                      message: "Falha de rede ao processar pagamento.",
+                    });
+                    reject(err);
+                  });
+              });
+            },
+            onError: (err) => {
+              console.error("Brick error", err);
+              const msg =
+                (err as { message?: string })?.message ||
+                "Verifique os dados e tente novamente.";
+              setStatus({ kind: "error", message: friendlyMpError(msg) });
+            },
+          },
+        });
       } catch (err) {
         console.error("Mount error", err);
         if (!cancelled)
@@ -328,7 +338,7 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [status.kind, publicKey, order, payer]);
+  }, [open, step, publicKey, order, payer]);
 
   // Poll Pix status
   useEffect(() => {
@@ -352,57 +362,71 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
   if (!open) return null;
 
   const versionLabel = order.version === "com-sal" ? "Com sal" : "Sem sal";
-
+  const productImg =
+    order.version === "com-sal" ? productImage : productSemSalImage;
+  const totalFmt = order.total.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
   const payerValid =
     payer.firstName.trim().length > 1 &&
     payer.lastName.trim().length > 1 &&
     /\S+@\S+\.\S+/.test(payer.email) &&
     payer.cpf.replace(/\D/g, "").length === 11;
 
+  const inputClass =
+    "mt-1 w-full px-3 py-2.5 bg-white text-[#1a1a1a] placeholder:text-[#9a9a9a] border border-[#cfcfcf] rounded-md focus:outline-none focus:border-[#b8902f] focus:ring-2 focus:ring-[#b8902f]/20";
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto"
-      onClick={onClose}
-      data-testid="checkout-modal-backdrop"
-    >
-      <div
-        className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl my-8 max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-[#eee]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#b8902f]">
-              Finalizar compra
-            </p>
-            <h3 className="mt-1 text-xl font-bold text-[#1a1a1a]">
-              DN. Maria — Alho Triturado
-            </h3>
-            <p className="mt-0.5 text-sm text-[#5a5a5a]">
-              {versionLabel} · {order.size} · Quantidade {order.quantity}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-[#5a5a5a]">Total</p>
-            <p className="text-2xl font-bold text-[hsl(var(--primary))]">
-              {order.total.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </p>
-          </div>
+    <div className="fixed inset-0 z-50 bg-[#fbf7f0] overflow-y-auto">
+      {/* Top bar */}
+      <header className="sticky top-0 z-10 bg-white border-b border-[#e8e2d4]">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 h-16 flex items-center justify-between">
           <button
             onClick={onClose}
-            data-testid="button-close-checkout"
-            className="ml-2 p-2 text-[#5a5a5a] hover:text-[#1a1a1a] hover:bg-[#fbf7f0] rounded-lg transition-colors"
-            aria-label="Fechar"
+            data-testid="button-back-checkout"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#5a5a5a] hover:text-[#1a1a1a] transition-colors"
           >
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
+            Voltar à loja
           </button>
+          <img src={logo} alt="DN. Maria" className="h-9 w-auto" />
+          <div className="flex items-center gap-2 text-xs text-[#5a5a5a]">
+            <Lock className="w-3.5 h-3.5 text-[#2f7a3a]" />
+            Compra segura
+          </div>
         </div>
+      </header>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+      {/* Stepper */}
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-6">
+        <div className="flex items-center gap-3 text-xs sm:text-sm">
+          <StepDot active={step === "payer"} done={step === "payment"}>
+            1. Seus dados
+          </StepDot>
+          <div className="flex-1 h-px bg-[#e8e2d4]" />
+          <StepDot
+            active={step === "payment"}
+            done={
+              status.kind === "success" || status.kind === "pending-pix"
+            }
+          >
+            2. Pagamento
+          </StepDot>
+        </div>
+      </div>
+
+      {/* Content */}
+      <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+        {/* Left: form / status */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#eee] p-6 sm:p-8">
+          {status.kind === "loading-config" && (
+            <div className="flex flex-col items-center text-center py-16">
+              <Loader2 className="w-10 h-10 text-[#b8902f] animate-spin mb-3" />
+              <p className="text-[#5a5a5a]">Carregando checkout seguro...</p>
+            </div>
+          )}
+
           {status.kind === "config-error" && (
             <div className="flex flex-col items-center text-center py-12">
               <AlertCircle className="w-12 h-12 text-[hsl(var(--primary))] mb-3" />
@@ -410,25 +434,18 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
             </div>
           )}
 
-          {status.kind === "loading" && (
-            <div className="flex flex-col items-center text-center py-16">
-              <Loader2 className="w-10 h-10 text-[#b8902f] animate-spin mb-3" />
-              <p className="text-[#5a5a5a]">Carregando checkout seguro...</p>
-            </div>
-          )}
-
-          {status.kind === "collect-payer" && (
-            <div className="space-y-4">
+          {status.kind === "idle" && step === "payer" && (
+            <div className="space-y-5">
               <div>
-                <h4 className="text-base font-bold text-[#1a1a1a]">
+                <h2 className="text-2xl font-bold text-[#1a1a1a]">
                   Seus dados
-                </h4>
+                </h2>
                 <p className="text-sm text-[#5a5a5a] mt-1">
-                  Precisamos dessas informações para emitir a nota e processar o
-                  pagamento.
+                  Precisamos dessas informações para emitir a nota e processar
+                  o pagamento.
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-xs font-semibold text-[#5a5a5a] uppercase tracking-wider">
                     Nome
@@ -440,7 +457,7 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
                     onChange={(e) =>
                       setPayer({ ...payer, firstName: e.target.value })
                     }
-                    className="mt-1 w-full px-3 py-2 border border-[#e2e2e2] rounded-md focus:outline-none focus:border-[#b8902f]"
+                    className={inputClass}
                   />
                 </label>
                 <label className="block">
@@ -454,7 +471,7 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
                     onChange={(e) =>
                       setPayer({ ...payer, lastName: e.target.value })
                     }
-                    className="mt-1 w-full px-3 py-2 border border-[#e2e2e2] rounded-md focus:outline-none focus:border-[#b8902f]"
+                    className={inputClass}
                   />
                 </label>
               </div>
@@ -464,12 +481,13 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
                 </span>
                 <input
                   type="email"
+                  placeholder="seu@email.com"
                   data-testid="input-email"
                   value={payer.email}
                   onChange={(e) =>
                     setPayer({ ...payer, email: e.target.value })
                   }
-                  className="mt-1 w-full px-3 py-2 border border-[#e2e2e2] rounded-md focus:outline-none focus:border-[#b8902f]"
+                  className={inputClass}
                 />
               </label>
               <label className="block">
@@ -482,19 +500,25 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
                   placeholder="000.000.000-00"
                   data-testid="input-cpf"
                   value={payer.cpf}
-                  onChange={(e) => setPayer({ ...payer, cpf: e.target.value })}
-                  className="mt-1 w-full px-3 py-2 border border-[#e2e2e2] rounded-md focus:outline-none focus:border-[#b8902f]"
+                  onChange={(e) =>
+                    setPayer({ ...payer, cpf: formatCpf(e.target.value) })
+                  }
+                  className={inputClass}
                 />
               </label>
               <button
                 disabled={!payerValid}
                 data-testid="button-continue-payment"
-                onClick={() => setStatus({ kind: "ready" })}
-                className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-md bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 transition-colors"
+                onClick={() => setStep("payment")}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3.5 transition-colors"
               >
                 Continuar para pagamento
                 <ArrowRight className="w-4 h-4" />
               </button>
+              <div className="flex items-center justify-center gap-2 text-xs text-[#7a7a7a] pt-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#2f7a3a]" />
+                Seus dados são protegidos e usados apenas para esta compra.
+              </div>
             </div>
           )}
 
@@ -515,10 +539,10 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
               <div className="w-16 h-16 rounded-full bg-[#e9f4eb] flex items-center justify-center mb-4">
                 <CheckCircle2 className="w-9 h-9 text-[#2f7a3a]" />
               </div>
-              <h4 className="text-2xl font-bold text-[#1a1a1a]">
+              <h3 className="text-2xl font-bold text-[#1a1a1a]">
                 Pagamento aprovado!
-              </h4>
-              <p className="mt-2 text-[#5a5a5a] max-w-sm">
+              </h3>
+              <p className="mt-2 text-[#5a5a5a] max-w-md">
                 Recebemos seu pedido. Em breve você receberá um e-mail com a
                 confirmação e o código de rastreamento.
               </p>
@@ -530,23 +554,23 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
                 data-testid="button-close-success"
                 className="mt-6 px-6 py-3 rounded-md bg-[hsl(var(--primary))] text-white font-bold hover:bg-[hsl(var(--primary))]/90"
               >
-                Fechar
+                Voltar à loja
               </button>
             </div>
           )}
 
           {status.kind === "pending-pix" && (
-            <div className="flex flex-col items-center text-center py-6">
-              <h4 className="text-lg font-bold text-[#1a1a1a]">
+            <div className="flex flex-col items-center text-center py-4">
+              <h3 className="text-xl font-bold text-[#1a1a1a]">
                 Escaneie o QR Code para pagar
-              </h4>
+              </h3>
               <p className="text-sm text-[#5a5a5a] mt-1">
                 Aguardando confirmação do pagamento...
               </p>
               <img
                 src={`data:image/png;base64,${status.qrBase64}`}
                 alt="QR Code Pix"
-                className="mt-5 w-56 h-56 border-4 border-[#fbf7f0] rounded-xl"
+                className="mt-5 w-60 h-60 border-4 border-[#fbf7f0] rounded-xl"
               />
               <div className="mt-5 w-full max-w-md">
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#5a5a5a]">
@@ -557,7 +581,7 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
                     readOnly
                     value={status.qrCode}
                     data-testid="input-pix-code"
-                    className="flex-1 px-3 py-2 text-xs border border-[#e2e2e2] rounded-md bg-[#fbf7f0] font-mono"
+                    className="flex-1 px-3 py-2 text-xs border border-[#cfcfcf] rounded-md bg-white text-[#1a1a1a] font-mono"
                   />
                   <button
                     onClick={() => navigator.clipboard.writeText(status.qrCode)}
@@ -578,12 +602,15 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
           {status.kind === "error" && (
             <div className="flex flex-col items-center text-center py-10">
               <AlertCircle className="w-12 h-12 text-[hsl(var(--primary))] mb-3" />
-              <h4 className="text-lg font-bold text-[#1a1a1a]">
+              <h3 className="text-lg font-bold text-[#1a1a1a]">
                 Não foi possível concluir
-              </h4>
-              <p className="mt-1 text-[#5a5a5a] max-w-sm">{status.message}</p>
+              </h3>
+              <p className="mt-1 text-[#5a5a5a] max-w-md">{status.message}</p>
               <button
-                onClick={() => setStatus({ kind: "collect-payer" })}
+                onClick={() => {
+                  setStatus({ kind: "idle" });
+                  setStep("payment");
+                }}
                 data-testid="button-retry-checkout"
                 className="mt-5 px-6 py-3 rounded-md bg-[hsl(var(--primary))] text-white font-bold hover:bg-[hsl(var(--primary))]/90"
               >
@@ -592,17 +619,102 @@ export default function CheckoutModal({ open, onClose, order }: Props) {
             </div>
           )}
 
-          {/* Brick container */}
-          <div
-            id={containerId}
-            className={
-              status.kind === "ready" || status.kind === "processing"
-                ? ""
-                : "hidden"
-            }
-          />
+          {/* Brick container — only visible during payment step in idle/processing */}
+          {step === "payment" && (
+            <div
+              className={
+                status.kind === "idle" || status.kind === "processing"
+                  ? "block"
+                  : "hidden"
+              }
+            >
+              {status.kind === "idle" && (
+                <div className="mb-4">
+                  <h2 className="text-2xl font-bold text-[#1a1a1a]">
+                    Pagamento
+                  </h2>
+                  <p className="text-sm text-[#5a5a5a] mt-1">
+                    Escolha cartão de crédito, débito ou Pix.
+                  </p>
+                </div>
+              )}
+              <div id={containerId} />
+            </div>
+          )}
         </div>
-      </div>
+
+        {/* Right: order summary */}
+        <aside className="bg-white rounded-2xl shadow-sm border border-[#eee] p-6 h-max sticky top-24">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#b8902f]">
+            Resumo do pedido
+          </h3>
+          <div className="mt-4 flex gap-4 items-center">
+            <div className="w-20 h-20 rounded-lg bg-[#fbf7f0] flex items-center justify-center overflow-hidden">
+              <img src={productImg} alt="" className="w-full h-full object-contain" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-[#1a1a1a]">
+                Alho Triturado
+              </p>
+              <p className="text-xs text-[#5a5a5a]">
+                {versionLabel} · {order.size}
+              </p>
+              <p className="text-xs text-[#5a5a5a] mt-0.5">
+                Quantidade: {order.quantity}
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 pt-5 border-t border-[#eee] space-y-2 text-sm">
+            <div className="flex justify-between text-[#5a5a5a]">
+              <span>Subtotal</span>
+              <span>{totalFmt}</span>
+            </div>
+            <div className="flex justify-between text-[#5a5a5a]">
+              <span>Frete</span>
+              <span className="text-[#2f7a3a] font-semibold">Grátis</span>
+            </div>
+            <div className="flex justify-between text-base font-bold text-[#1a1a1a] pt-2 border-t border-[#eee]">
+              <span>Total</span>
+              <span className="text-[hsl(var(--primary))]">{totalFmt}</span>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+  );
+}
+
+function StepDot({
+  active,
+  done,
+  children,
+}: {
+  active: boolean;
+  done: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`inline-flex items-center gap-2 font-semibold ${
+        active
+          ? "text-[#1a1a1a]"
+          : done
+            ? "text-[#2f7a3a]"
+            : "text-[#9a9a9a]"
+      }`}
+    >
+      <span
+        className={`inline-flex w-6 h-6 items-center justify-center rounded-full text-xs ${
+          active
+            ? "bg-[hsl(var(--primary))] text-white"
+            : done
+              ? "bg-[#2f7a3a] text-white"
+              : "bg-[#e8e2d4] text-[#9a9a9a]"
+        }`}
+      >
+        {done ? <CheckCircle2 className="w-3.5 h-3.5" /> : null}
+      </span>
+      {children}
     </div>
   );
 }

@@ -211,6 +211,11 @@ function Hero() {
 
           {/* CTA */}
           <button
+            onClick={() => {
+              document
+                .getElementById("comprar")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
             className="mt-10 group inline-flex items-center justify-center gap-3 rounded-md bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 active:scale-[0.99] transition-all text-[hsl(var(--primary-foreground))] font-bold tracking-wide px-10 py-4 text-base sm:text-lg shadow-[0_10px_30px_-10px_rgba(220,40,40,0.6)] w-full max-w-md"
             data-testid="button-buy"
           >
@@ -491,7 +496,7 @@ function ProductConfigurator({
       : "Alho e estabilizante (INS 330).";
 
   return (
-    <section className="bg-white py-16 sm:py-24">
+    <section id="comprar" className="bg-white py-16 sm:py-24 scroll-mt-8">
       <div className="mx-auto max-w-6xl px-6 sm:px-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
           {/* Image */}
@@ -763,6 +768,11 @@ function FooterCTA() {
           </h2>
 
           <button
+            onClick={() => {
+              document
+                .getElementById("comprar")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
             className="mt-8 group inline-flex items-center justify-center gap-3 rounded-md bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 active:scale-[0.99] transition-all text-[hsl(var(--primary-foreground))] font-bold tracking-wide px-10 py-4 text-base sm:text-lg shadow-[0_10px_30px_-10px_rgba(220,40,40,0.6)] w-full max-w-md"
             data-testid="button-buy-footer"
           >
